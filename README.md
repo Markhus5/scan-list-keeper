@@ -12,6 +12,7 @@ Barcode / serial-number list app for Samsung tablets (installable PWA), spun off
 | `index.html` | Scanner app |
 | `manager.html` | Manager View |
 | `manifest.json`, `sw.js`, `icons/` | PWA install + offline |
+| `js/qrcode.js` | QR code generator for the About screen (MIT, Kazuhiko Arase) |
 | `apps-script/Code.gs` | Google Sheet backend (not served by GitHub; paste into Apps Script) |
 
 ## 1. Put it on GitHub Pages
@@ -52,6 +53,15 @@ Open `manager.html` on your PC → **Connection** → paste the `/exec` URL + `M
 - **Copy for Excel** → click cell A1 in Excel → Ctrl+V. Columns: Title · User · Notes · Tablet · Started · # · Serial · Scanned at.
 - **Download CSV** keeps long numeric serials and leading zeros intact.
 - You can also just open the Google Sheet directly, or *File → Download → .xlsx*.
+
+## About & sharing (ⓘ button)
+
+Shows the app version and a QR code with three choices:
+- **App link** – scan with a tablet camera to open/install the app.
+- **App + sync setup** – opens the app on a new tablet with the sync URL and write key already filled in (staff only; it contains the key).
+- **Manager View** – link to `manager.html`.
+
+**Share…** opens the Android share sheet (Teams, email, Nearby Share); **Copy link** copies it.
 
 ## Users
 

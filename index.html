@@ -98,6 +98,7 @@ tr.new td{background:var(--okbg)}
   <img src="icons/mtdata-logo-navy.png" alt="MTData" class="logo">
   <h1 id="topTitle">Scan List Keeper</h1>
   <button class="sync off" id="syncBadge" title="Sync status">Not set up</button>
+  <button class="iconbtn" id="aboutBtn" title="About &amp; share">&#9432;</button>
   <button class="iconbtn" id="settingsBtn" title="Settings">&#9881;</button>
 </header>
 
@@ -194,6 +195,30 @@ tr.new td{background:var(--okbg)}
 </div>
 
 <!-- Edit heading / confirm modal -->
+<!-- About modal -->
+<div class="modal" id="aboutModal">
+  <div class="box" style="text-align:center">
+    <img src="icons/mtdata-logo-navy.png" alt="MTData" style="height:56px;margin:4px auto 10px;display:block">
+    <h3 style="font-size:22px;color:var(--navy)">Scan List Keeper</h3>
+    <div class="hint" id="aboutVer"></div>
+    <p style="margin:12px 0 4px">Scan serial numbers into titled lists, keep them on the tablet, and sync them to the Manager View for Excel.</p>
+    <div class="tabs" style="justify-content:center;margin-top:14px">
+      <button class="tab on" data-qr="app">App link</button>
+      <button class="tab" data-qr="setup">App + sync setup</button>
+      <button class="tab" data-qr="mgr">Manager View</button>
+    </div>
+    <div id="qrBox" style="background:#fff;display:inline-block;padding:12px;border-radius:12px;border:1px solid var(--line)"></div>
+    <div class="hint" id="qrHint" style="margin-top:8px"></div>
+    <div id="qrUrl" style="font-size:13px;word-break:break-all;margin-top:6px;color:var(--muted)"></div>
+    <div class="btns" style="justify-content:center">
+      <button class="btn primary" id="qrShare">Share…</button>
+      <button class="btn" id="qrCopy">Copy link</button>
+      <button class="btn" id="aboutClose">Close</button>
+    </div>
+    <div class="hint" style="margin-top:14px">MTData Production · Built by Mark</div>
+  </div>
+</div>
+
 <div class="modal" id="editModal">
   <div class="box">
     <h3>Edit list heading</h3>
@@ -219,6 +244,7 @@ tr.new td{background:var(--okbg)}
 
 <div class="toast" id="toast"></div>
 
+<script src="js/qrcode.js"></script>
 <script>
 'use strict';
 /* ---------- storage ---------- */
@@ -311,7 +337,7 @@ function renderLists(){
     </div>`).join(''):`<div class="empty">${lists.length?'No lists match.':'No lists yet — start one above.'}</div>`;
 }
 $('lists').addEventListener('click',e=>{const el=e.target.closest('.li');if(el)openList(el.dataset.id)});
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));filter=t.dataset.f;renderLists()});
+document.querySelectorAll('.tab[data-f]').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab[data-f]').forEach(x=>x.classList.toggle('on',x===t));filter=t.dataset.f;renderLists()});
 $('listSearch').oninput=renderLists;
 $('startBtn').onclick=()=>{
   const title=$('newTitle').value.trim(), user=getUser('newUser','newGuest'), notes=$('newNotes').value.trim();
@@ -498,6 +524,35 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
 document.querySelectorAll('.userSel').forEach(fillUserSel);
 [['newUser','newGuest'],['eUser','eGuest']].forEach(([s,g])=>$(s).addEventListener('change',()=>{$(g).classList.toggle('hidden',$(s).value!=='Guest');if($(s).value==='Guest')$(g).focus()}));
+/* ---------- about / QR share ---------- */
+const APP_VERSION='v2.1 (Oct 2026)';
+let qrMode='app';
+function baseUrl(){return location.origin+location.pathname.replace(/[^/]*$/,'')}
+function setupLink(){return baseUrl()+'index.html#setup='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({apiUrl:settings.apiUrl,apiKey:settings.apiKey})))))}
+function qrTarget(){
+  if(qrMode==='mgr')return {url:baseUrl()+'manager.html',hint:'Open the Manager View on a PC or phone.'};
+  if(qrMode==='setup'){
+    if(!settings.apiUrl)return {url:baseUrl(),hint:'Sync isn’t set up on this tablet yet — showing the plain app link.'};
+    return {url:setupLink(),hint:'Scan on a new tablet: opens the app with the sync URL and write key filled in. Only share with staff.'};
+  }
+  return {url:baseUrl(),hint:'Scan with the tablet camera, open in Chrome, then ⋮ → Add to Home screen.'};
+}
+function drawQR(){
+  const t=qrTarget();
+  try{const q=qrcode(0,'M');q.addData(t.url);q.make();
+    $('qrBox').innerHTML=q.createSvgTag({cellSize:6,margin:2,scalable:true});
+    const svg=$('qrBox').querySelector('svg');svg.style.width=svg.style.height='240px';svg.style.display='block';
+  }catch(e){$('qrBox').textContent='Link too long for QR'}
+  $('qrHint').textContent=t.hint;$('qrUrl').textContent=qrMode==='setup'&&settings.apiUrl?baseUrl()+'index.html#setup=…':t.url;
+}
+$('aboutBtn').onclick=()=>{$('aboutVer').textContent=APP_VERSION+(settings.device?' · '+settings.device:'');drawQR();openModal('aboutModal')};
+$('aboutClose').onclick=()=>closeModal('aboutModal');
+document.querySelectorAll('[data-qr]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-qr]').forEach(x=>x.classList.toggle('on',x===b));qrMode=b.dataset.qr;drawQR()});
+$('qrCopy').onclick=async()=>toast(await copyText(qrTarget().url)?'Link copied':'Copy failed');
+$('qrShare').onclick=async()=>{const u=qrTarget().url;
+  if(navigator.share){try{await navigator.share({title:'Scan List Keeper',text:'MTData Scan List Keeper',url:u})}catch(e){}}
+  else toast(await copyText(u)?'Sharing not supported here — link copied':'Copy failed')};
+
 showHome();updateBadge();syncAll();
 </script>
 </body>

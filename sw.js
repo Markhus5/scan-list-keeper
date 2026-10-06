@@ -1,8 +1,8 @@
 // Bump VERSION whenever you change any file so tablets pick up the update.
-const VERSION = 'slk-v2';
+const VERSION = 'slk-v3';
 const FILES = ['./', './index.html', './manager.html', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png',
-  './icons/mtdata-logo-navy.png'];
+  './icons/mtdata-logo-navy.png', './js/qrcode.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
