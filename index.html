@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f3d5e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Scan List Keeper</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#eef2f6; --card:#ffffff; --ink:#14212b; --muted:#5d6b78; --line:#d5dde5;
+  --brand:#0f3d5e; --brand2:#1b6aa5; --ok:#1e8e3e; --okbg:#e3f4e8; --warn:#b26a00; --warnbg:#fff3dc;
+  --bad:#c62828; --badbg:#fde7e7; --chip:#e8eef4;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0e1419; --card:#18212a; --ink:#e6edf3; --muted:#93a3b2; --line:#2a3642;
+    --brand:#7cc0f0; --brand2:#5aa8e0; --okbg:#173622; --warnbg:#3a2c10; --badbg:#3d1717; --chip:#22303c; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit}
+header.top{position:sticky;top:0;z-index:5;background:#0f3d5e;color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top))}
+header.top h1{font-size:19px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:10px;min-width:44px;height:44px;padding:0 12px;font-size:16px;cursor:pointer}
+.iconbtn:active{background:rgba(255,255,255,.25)}
+.sync{font-size:13px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.15);white-space:nowrap;cursor:pointer;border:0;color:#fff}
+.sync.ok{background:#1e8e3e}.sync.pend{background:#b26a00}.sync.off{background:#6b7785}.sync.err{background:#c62828}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+input[type=text],input[type=url],input[type=password],textarea,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:17px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--brand2);outline-offset:0}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 220px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 16px;min-height:48px;font-weight:600;cursor:pointer}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--brand2);border-color:var(--brand2);color:#fff}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{min-height:40px;padding:8px 12px;font-size:14px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tab{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;font-size:14px;cursor:pointer}
+.tab.on{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+.lists{display:flex;flex-direction:column;gap:8px}
+.li{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--bg)}
+.li:active{border-color:var(--brand2)}
+.li .main{flex:1;min-width:0}
+.li .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .s{font-size:13px;color:var(--muted)}
+.count{font-size:22px;font-weight:800;color:var(--brand);min-width:56px;text-align:right}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--chip);margin-left:6px;vertical-align:middle}
+.chip.closed{background:#6b7785;color:#fff}.chip.pend{background:var(--warnbg);color:var(--warn)}
+.empty{color:var(--muted);text-align:center;padding:20px}
+/* scan screen */
+.lhead{display:flex;gap:12px;align-items:flex-start}
+.lhead .info{flex:1;min-width:0}
+.lhead .title{font-size:22px;font-weight:800;word-break:break-word}
+.lhead .meta{color:var(--muted);font-size:14px}
+.bigcount{text-align:center;min-width:110px}
+.bigcount b{display:block;font-size:44px;line-height:1;color:var(--brand)}
+.bigcount span{font-size:13px;color:var(--muted)}
+.scanwrap{display:flex;gap:10px;margin-top:14px}
+#scanInput{flex:1;font-size:26px;padding:16px;font-family:ui-monospace,Consolas,monospace;letter-spacing:.5px;border-width:2px}
+.status{margin-top:10px;padding:12px 14px;border-radius:10px;font-weight:700;font-size:18px;background:var(--chip);min-height:50px;transition:background .15s}
+.status.ok{background:var(--okbg);color:var(--ok)}.status.warn{background:var(--warnbg);color:var(--warn)}.status.bad{background:var(--badbg);color:var(--bad)}
+.flash-ok #scanInput{border-color:var(--ok)}.flash-bad #scanInput{border-color:var(--bad)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--muted);font-weight:600}
+td.sn{font-family:ui-monospace,Consolas,monospace;font-size:17px;word-break:break-all}
+td.n{color:var(--muted);width:56px}
+td.tm{color:var(--muted);font-size:14px;white-space:nowrap;width:1%}
+td.x{width:1%}
+.del{border:0;background:none;color:var(--bad);font-size:20px;min-width:40px;min-height:40px;cursor:pointer}
+tr.new td{background:var(--okbg)}
+/* modal & toast */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.modal.open{display:flex}
+.modal .box{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 6px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14212b;color:#fff;padding:12px 18px;border-radius:12px;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.hint{font-size:13px;color:var(--muted)}
+.hidden{display:none!important}
+.check{display:flex;align-items:center;gap:10px;margin-top:12px;color:var(--ink);font-size:15px}
+.check input{width:22px;height:22px}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="iconbtn hidden" id="backBtn" title="Back to lists">&#8592;</button>
+  <h1 id="topTitle">Scan List Keeper</h1>
+  <button class="sync off" id="syncBadge" title="Sync status">Not set up</button>
+  <button class="iconbtn" id="settingsBtn" title="Settings">&#9881;</button>
+</header>
+
+<main>
+<!-- HOME -->
+<section id="home">
+  <div class="card">
+    <h2>Start a new list</h2>
+    <div class="row">
+      <div><label for="newTitle">Title *</label><input type="text" id="newTitle" placeholder="e.g. WO-12345 Camera boards" autocomplete="off"></div>
+      <div><label for="newUser">User *</label><input type="text" id="newUser" placeholder="Your name" autocomplete="off"></div>
+    </div>
+    <label for="newNotes">Notes (optional)</label>
+    <input type="text" id="newNotes" placeholder="e.g. Line 2, batch, customer, part no." autocomplete="off">
+    <div class="btns"><button class="btn primary" id="startBtn">Start scanning &#8594;</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Continue a list</h2>
+    <div class="tabs">
+      <button class="tab on" data-f="open">Open</button>
+      <button class="tab" data-f="closed">Finished</button>
+      <button class="tab" data-f="all">All</button>
+    </div>
+    <input type="text" id="listSearch" placeholder="Search title, user or serial…" autocomplete="off" style="margin-bottom:10px">
+    <div class="lists" id="lists"></div>
+  </div>
+</section>
+
+<!-- SCAN -->
+<section id="scan" class="hidden">
+  <div class="card">
+    <div class="lhead">
+      <div class="info">
+        <div class="title" id="lTitle"></div>
+        <div class="meta" id="lMeta"></div>
+      </div>
+      <div class="bigcount"><b id="lCount">0</b><span>scanned</span></div>
+    </div>
+    <div class="scanwrap" id="scanWrap">
+      <input type="text" id="scanInput" inputmode="none" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Scan serial number…">
+      <button class="btn small" id="kbBtn" title="Show on-screen keyboard to type manually">&#9000; Type</button>
+    </div>
+    <div class="status" id="status">Ready — scan a barcode</div>
+    <div class="btns">
+      <button class="btn" id="undoBtn">&#8630; Undo last</button>
+      <button class="btn" id="copySnBtn">Copy serials</button>
+      <button class="btn" id="copyXlBtn">Copy for Excel</button>
+      <button class="btn" id="csvBtn">Download CSV</button>
+      <button class="btn" id="editBtn">Edit heading</button>
+      <button class="btn" id="finishBtn">Finish list</button>
+    </div>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>#</th><th>Serial</th><th>Time</th><th></th></tr></thead>
+      <tbody id="items"></tbody>
+    </table>
+    <div class="empty" id="itemsEmpty">No serials yet.</div>
+  </div>
+</section>
+</main>
+
+<!-- Settings modal -->
+<div class="modal" id="settingsModal">
+  <div class="box">
+    <h3>Settings</h3>
+    <div class="hint">Saved on this tablet only.</div>
+    <label for="sDevice">Tablet name</label>
+    <input type="text" id="sDevice" placeholder="e.g. SMT Line 1 Tablet">
+    <label for="sApi">Google Sheet sync URL (Apps Script web app)</label>
+    <input type="url" id="sApi" placeholder="https://script.google.com/macros/s/…/exec">
+    <label for="sKey">Write key</label>
+    <input type="password" id="sKey" placeholder="Same as WRITE_KEY in the script">
+    <label class="check"><input type="checkbox" id="sDupBlock"> Block duplicate serials in the same list</label>
+    <label class="check"><input type="checkbox" id="sUpper"> Convert scans to UPPERCASE</label>
+    <label class="check"><input type="checkbox" id="sSound"> Beep on scan</label>
+    <div class="btns">
+      <button class="btn primary" id="sSave">Save</button>
+      <button class="btn" id="sTest">Test sync</button>
+      <button class="btn" id="sClose">Close</button>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <div class="btns" style="margin-top:0">
+      <button class="btn small" id="sSetupLink">Copy setup link</button>
+      <button class="btn small" id="sBackup">Backup lists</button>
+      <button class="btn small" id="sRestore">Restore backup</button>
+      <a class="btn small" href="manager.html" style="text-decoration:none;display:inline-flex;align-items:center">Manager View &#8599;</a>
+    </div>
+    <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+    <div class="hint" style="margin-top:10px">Setup link: open it on another tablet to copy these sync settings across in one tap.</div>
+  </div>
+</div>
+
+<!-- Edit heading / confirm modal -->
+<div class="modal" id="editModal">
+  <div class="box">
+    <h3>Edit list heading</h3>
+    <label for="eTitle">Title</label><input type="text" id="eTitle">
+    <label for="eUser">User</label><input type="text" id="eUser">
+    <label for="eNotes">Notes</label><input type="text" id="eNotes">
+    <div class="btns">
+      <button class="btn primary" id="eSave">Save</button>
+      <button class="btn" id="eCancel">Cancel</button>
+      <button class="btn danger" id="eDelete" style="margin-left:auto">Delete list</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="confirmModal">
+  <div class="box">
+    <h3 id="cTitle">Are you sure?</h3>
+    <p id="cMsg"></p>
+    <div class="btns"><button class="btn danger" id="cYes">Yes</button><button class="btn" id="cNo">Cancel</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ---------- storage ---------- */
+const K_LISTS='slk_lists', K_SET='slk_settings', K_LASTUSER='slk_lastuser';
+const $=id=>document.getElementById(id);
+function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Could not save — storage full?');return false}}
+
+let lists=load(K_LISTS,[]);
+let settings=Object.assign({device:'',apiUrl:'',apiKey:'',dupBlock:true,upper:false,sound:true},load(K_SET,{}));
+let current=null, filter='open', lastAddedIdx=-1;
+
+// one-tap setup link: index.html#setup=<base64 json>
+(function applySetupLink(){
+  const m=location.hash.match(/setup=([^&]+)/);
+  if(!m)return;
+  try{
+    const s=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+    ['apiUrl','apiKey'].forEach(k=>{if(s[k])settings[k]=s[k]});
+    save(K_SET,settings);
+    history.replaceState(null,'',location.pathname);
+    setTimeout(()=>{toast('Sync settings applied ✔');openSettings();$('sDevice').focus()},300);
+  }catch(e){}
+})();
+
+function persist(){save(K_LISTS,lists)}
+function uid(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)}
+function nowISO(){return new Date().toISOString()}
+function pad(n){return String(n).padStart(2,'0')}
+function fmtXL(iso){const d=new Date(iso);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
+function fmtShort(iso){const d=new Date(iso);return d.toLocaleDateString('en-AU',{day:'2-digit',month:'short'})+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+function fmtTime(iso){const d=new Date(iso);return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+/* ---------- toast / sound / modal ---------- */
+let toastT;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200)}
+let actx;
+function beep(ok){
+  if(!settings.sound)return;
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const play=(f,start,dur)=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;o.type='square';g.gain.value=.06;o.connect(g);g.connect(actx.destination);o.start(actx.currentTime+start);o.stop(actx.currentTime+start+dur)};
+    if(ok)play(1800,0,.08);else{play(300,0,.15);play(300,.22,.15)}
+  }catch(e){}
+  if(!ok&&navigator.vibrate)navigator.vibrate([120,80,120]);
+}
+function modalOpen(){return !!document.querySelector('.modal.open')}
+function openModal(id){$(id).classList.add('open')}
+function closeModal(id){$(id).classList.remove('open');refocus()}
+function confirmBox(title,msg){
+  return new Promise(res=>{
+    $('cTitle').textContent=title;$('cMsg').textContent=msg;openModal('confirmModal');
+    const done=v=>{closeModal('confirmModal');$('cYes').onclick=$('cNo').onclick=null;res(v)};
+    $('cYes').onclick=()=>done(true);$('cNo').onclick=()=>done(false);
+  });
+}
+
+/* ---------- home ---------- */
+function showHome(){
+  current=null;
+  $('home').classList.remove('hidden');$('scan').classList.add('hidden');$('backBtn').classList.add('hidden');
+  $('topTitle').textContent='Scan List Keeper';
+  $('newUser').value=$('newUser').value||load(K_LASTUSER,'');
+  renderLists();
+}
+function renderLists(){
+  const q=$('listSearch').value.trim().toLowerCase();
+  const out=lists.filter(l=>filter==='all'||(filter==='open'?l.status!=='closed':l.status==='closed'))
+    .filter(l=>!q||(l.title+' '+l.user+' '+(l.notes||'')).toLowerCase().includes(q)||l.items.some(i=>i.sn.toLowerCase().includes(q)))
+    .sort((a,b)=>b.updated.localeCompare(a.updated));
+  $('lists').innerHTML=out.length?out.map(l=>`
+    <div class="li" data-id="${l.id}">
+      <div class="main">
+        <div class="t">${esc(l.title)}${l.status==='closed'?'<span class="chip closed">Finished</span>':''}${l.dirty&&settings.apiUrl?'<span class="chip pend">Not synced</span>':''}</div>
+        <div class="s">${esc(l.user)}${l.notes?' · '+esc(l.notes):''} · updated ${fmtShort(l.updated)}</div>
+      </div>
+      <div class="count">${l.items.length}</div>
+    </div>`).join(''):`<div class="empty">${lists.length?'No lists match.':'No lists yet — start one above.'}</div>`;
+}
+$('lists').addEventListener('click',e=>{const el=e.target.closest('.li');if(el)openList(el.dataset.id)});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));filter=t.dataset.f;renderLists()});
+$('listSearch').oninput=renderLists;
+$('startBtn').onclick=()=>{
+  const title=$('newTitle').value.trim(), user=$('newUser').value.trim(), notes=$('newNotes').value.trim();
+  if(!title){toast('Enter a title');$('newTitle').focus();return}
+  if(!user){toast('Enter the user name');$('newUser').focus();return}
+  const t=nowISO();
+  const l={id:uid(),title,user,notes,device:settings.device||'',created:t,updated:t,status:'open',items:[],dirty:true};
+  lists.push(l);persist();save(K_LASTUSER,user);
+  $('newTitle').value='';$('newNotes').value='';
+  queueSync(l.id);openList(l.id);
+};
+['newTitle','newUser','newNotes'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('startBtn').click()}));
+
+/* ---------- scan screen ---------- */
+function openList(id){
+  current=lists.find(l=>l.id===id);if(!current)return;
+  if(current.status==='closed'){current.status='open';touch()}
+  $('home').classList.add('hidden');$('scan').classList.remove('hidden');$('backBtn').classList.remove('hidden');
+  $('topTitle').textContent=current.title;
+  lastAddedIdx=-1;setStatus('','Ready — scan a barcode');renderScan();refocus();
+}
+function renderScan(){
+  const l=current;
+  $('lTitle').textContent=l.title;
+  $('lMeta').textContent=`User: ${l.user}${l.notes?' · '+l.notes:''} · Started ${fmtShort(l.created)}${l.device?' · '+l.device:''}`;
+  $('lCount').textContent=l.items.length;
+  const rows=[];
+  for(let i=l.items.length-1;i>=0;i--){const it=l.items[i];
+    rows.push(`<tr class="${i===lastAddedIdx?'new':''}"><td class="n">${i+1}</td><td class="sn">${esc(it.sn)}</td><td class="tm">${fmtTime(it.t)}</td><td class="x"><button class="del" data-i="${i}" title="Remove">&times;</button></td></tr>`)}
+  $('items').innerHTML=rows.join('');
+  $('itemsEmpty').classList.toggle('hidden',l.items.length>0);
+}
+function setStatus(kind,msg){const s=$('status');s.className='status '+kind;s.textContent=msg;
+  const w=$('scanWrap');w.classList.remove('flash-ok','flash-bad');if(kind==='ok')w.classList.add('flash-ok');if(kind==='bad'||kind==='warn')w.classList.add('flash-bad')}
+function touch(){current.updated=nowISO();current.dirty=true;persist();queueSync(current.id)}
+function clean(raw){let s=String(raw).replace(/[\x00-\x1F\x7F]/g,'').trim();if(settings.upper)s=s.toUpperCase();return s}
+function addScan(raw){
+  const sn=clean(raw);if(!sn)return;
+  const l=current;
+  const dupIdx=l.items.findIndex(i=>i.sn===sn);
+  if(dupIdx>=0&&settings.dupBlock){beep(false);setStatus('bad',`DUPLICATE — ${sn} already scanned (#${dupIdx+1}). Not added.`);return}
+  l.items.push({sn,t:nowISO()});lastAddedIdx=l.items.length-1;touch();
+  const other=lists.find(o=>o!==l&&o.items.some(i=>i.sn===sn));
+  if(dupIdx>=0){beep(false);setStatus('warn',`Added #${l.items.length} — ${sn} (duplicate of #${dupIdx+1})`)}
+  else if(other){beep(true);setStatus('warn',`Added #${l.items.length} — ${sn} · also in list “${other.title}”`)}
+  else{beep(true);setStatus('ok',`✔ #${l.items.length}  ${sn}`)}
+  renderScan();
+}
+const si=$('scanInput');
+si.addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();const v=si.value;si.value='';addScan(v)}
+});
+si.addEventListener('paste',e=>{ // pasting several lines adds each
+  const txt=(e.clipboardData||window.clipboardData).getData('text');
+  if(/[\r\n\t]/.test(txt.trim())){e.preventDefault();txt.split(/[\r\n\t]+/).forEach(addScan)}
+});
+function refocus(){setTimeout(()=>{
+  if(!current||modalOpen())return;
+  const a=document.activeElement;
+  if(a&&a!==si&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;
+  si.focus({preventScroll:true});
+},120)}
+document.addEventListener('click',e=>{if(current&&!e.target.closest('input,textarea,select,.modal'))refocus()});
+si.addEventListener('blur',refocus);
+let kbOn=false;
+$('kbBtn').onclick=()=>{kbOn=!kbOn;si.setAttribute('inputmode',kbOn?'text':'none');$('kbBtn').classList.toggle('primary',kbOn);si.blur();setTimeout(()=>si.focus(),50)};
+$('items').addEventListener('click',async e=>{
+  const b=e.target.closest('.del');if(!b)return;const i=+b.dataset.i;const sn=current.items[i].sn;
+  if(await confirmBox('Remove serial?',`#${i+1}  ${sn}`)){current.items.splice(i,1);lastAddedIdx=-1;touch();renderScan();setStatus('warn',`Removed ${sn}`)}
+});
+$('undoBtn').onclick=async()=>{
+  if(!current.items.length)return toast('Nothing to undo');
+  const it=current.items[current.items.length-1];
+  if(await confirmBox('Undo last scan?',`#${current.items.length}  ${it.sn}`)){current.items.pop();lastAddedIdx=-1;touch();renderScan();setStatus('warn',`Removed ${it.sn}`)}
+};
+$('backBtn').onclick=showHome;
+
+/* ---------- copy / export ---------- */
+async function copyText(txt){
+  try{await navigator.clipboard.writeText(txt);return true}catch(e){
+    const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();return ok}
+}
+function excelText(l){
+  const head=[['Title',l.title],['User',l.user],['Notes',l.notes||''],['Tablet',l.device||''],['Started',fmtXL(l.created)],['Count',l.items.length],[],['#','Serial','Scanned at']];
+  const rows=l.items.map((it,i)=>[i+1,it.sn,fmtXL(it.t)]);
+  return head.concat(rows).map(r=>r.join('\t')).join('\r\n');
+}
+$('copySnBtn').onclick=async()=>{if(!current.items.length)return toast('List is empty');
+  toast(await copyText(current.items.map(i=>i.sn).join('\r\n'))?`Copied ${current.items.length} serials`:'Copy failed')};
+$('copyXlBtn').onclick=async()=>{toast(await copyText(excelText(current))?'Copied — paste into cell A1 in Excel':'Copy failed')};
+function csvCell(v){v=String(v??'');
+  if(/^\d+$/.test(v)&&(v.length>11||v[0]==='0'))return '="'+v+'"'; // keep long numbers / leading zeros intact in Excel
+  return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function safeName(s){return String(s).replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_').slice(0,40)||'list'}
+$('csvBtn').onclick=()=>{
+  const l=current;
+  const rows=[['Title','User','Notes','Tablet','#','Serial','Scanned at']].concat(l.items.map((it,i)=>[l.title,l.user,l.notes||'',l.device||'',i+1,it.sn,fmtXL(it.t)]));
+  download(`${safeName(l.title)}_${safeName(l.user)}_${fmtXL(nowISO()).slice(0,10)}.csv`,'﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv');
+};
+$('finishBtn').onclick=async()=>{
+  if(await confirmBox('Finish this list?','It moves to “Finished”. You can still reopen it to keep scanning.')){current.status='closed';touch();toast('List finished');showHome()}
+};
+
+/* ---------- edit heading ---------- */
+$('editBtn').onclick=()=>{$('eTitle').value=current.title;$('eUser').value=current.user;$('eNotes').value=current.notes||'';openModal('editModal')};
+$('eCancel').onclick=()=>closeModal('editModal');
+$('eSave').onclick=()=>{
+  const t=$('eTitle').value.trim(),u=$('eUser').value.trim();if(!t||!u)return toast('Title and user are required');
+  current.title=t;current.user=u;current.notes=$('eNotes').value.trim();touch();closeModal('editModal');$('topTitle').textContent=t;renderScan();
+};
+$('eDelete').onclick=async()=>{
+  closeModal('editModal');
+  if(await confirmBox('Delete this list from the tablet?',`“${current.title}” (${current.items.length} serials). The copy already synced to the Google Sheet stays for the manager.`)){
+    lists=lists.filter(l=>l!==current);persist();toast('List deleted');showHome()}
+};
+
+/* ---------- sync ---------- */
+const timers={};let syncing=false,lastErr='';
+function queueSync(id){if(!settings.apiUrl)return updateBadge();clearTimeout(timers[id]);timers[id]=setTimeout(()=>syncList(id),1500);updateBadge()}
+async function post(body){
+  const r=await fetch(settings.apiUrl,{method:'POST',body:JSON.stringify(body)}); // text/plain → no CORS preflight
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'Sync error');return j;
+}
+async function syncList(id){
+  const l=lists.find(x=>x.id===id);if(!l||!l.dirty||!settings.apiUrl)return updateBadge();
+  if(!navigator.onLine)return updateBadge();
+  const stamp=l.updated;
+  try{
+    const {dirty,...payload}=l;
+    await post({action:'upsert',key:settings.apiKey,list:payload});
+    if(l.updated===stamp){l.dirty=false;persist()}else queueSync(id);
+    lastErr='';
+  }catch(e){lastErr=e.message||String(e)}
+  updateBadge();if(!current)renderLists();
+}
+async function syncAll(){if(syncing||!settings.apiUrl)return;syncing=true;for(const l of lists.filter(x=>x.dirty))await syncList(l.id);syncing=false;updateBadge()}
+function updateBadge(){
+  const b=$('syncBadge'),n=lists.filter(l=>l.dirty).length;
+  if(!settings.apiUrl){b.className='sync off';b.textContent='Local only';return}
+  if(!navigator.onLine){b.className='sync off';b.textContent=n?`Offline · ${n} waiting`:'Offline';return}
+  if(lastErr){b.className='sync err';b.textContent='Sync error';b.title=lastErr;return}
+  b.className='sync '+(n?'pend':'ok');b.textContent=n?`Syncing ${n}…`:'Synced ✔';b.title='';
+}
+$('syncBadge').onclick=()=>{if(!settings.apiUrl)return openSettings();if(lastErr)toast(lastErr);lists.forEach(l=>{if(l.dirty)clearTimeout(timers[l.id])});syncAll()};
+window.addEventListener('online',()=>{updateBadge();syncAll()});
+window.addEventListener('offline',updateBadge);
+setInterval(syncAll,60000);
+
+/* ---------- settings ---------- */
+function openSettings(){
+  $('sDevice').value=settings.device;$('sApi').value=settings.apiUrl;$('sKey').value=settings.apiKey;
+  $('sDupBlock').checked=settings.dupBlock;$('sUpper').checked=settings.upper;$('sSound').checked=settings.sound;openModal('settingsModal');
+}
+function readSettings(){
+  settings.device=$('sDevice').value.trim();settings.apiUrl=$('sApi').value.trim();settings.apiKey=$('sKey').value.trim();
+  settings.dupBlock=$('sDupBlock').checked;settings.upper=$('sUpper').checked;settings.sound=$('sSound').checked;save(K_SET,settings);
+}
+$('settingsBtn').onclick=openSettings;
+$('sClose').onclick=()=>closeModal('settingsModal');
+$('sSave').onclick=()=>{readSettings();lastErr='';closeModal('settingsModal');toast('Settings saved');lists.forEach(l=>{if(!l.device&&settings.device){l.device=settings.device;l.dirty=true}});persist();syncAll();updateBadge()};
+$('sTest').onclick=async()=>{readSettings();if(!settings.apiUrl)return toast('Enter the sync URL first');
+  try{await post({action:'ping',key:settings.apiKey});toast('✔ Connected to Google Sheet');lastErr=''}catch(e){toast('✖ '+e.message)}updateBadge()};
+$('sSetupLink').onclick=async()=>{readSettings();
+  const enc=encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({apiUrl:settings.apiUrl,apiKey:settings.apiKey})))));
+  const link=location.origin+location.pathname+'#setup='+enc;toast(await copyText(link)?'Setup link copied':'Copy failed')};
+$('sBackup').onclick=()=>download(`scan-lists-backup_${fmtXL(nowISO()).slice(0,10)}.json`,JSON.stringify({app:'scan-list-keeper',exported:nowISO(),lists},null,1),'application/json');
+$('sRestore').onclick=()=>$('restoreFile').click();
+$('restoreFile').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const d=JSON.parse(await f.text());const inc=Array.isArray(d)?d:d.lists;if(!Array.isArray(inc))throw 0;
+    let added=0,updated=0;
+    inc.forEach(l=>{if(!l.id||!Array.isArray(l.items))return;const ex=lists.find(x=>x.id===l.id);
+      if(!ex){lists.push(l);added++}else if(l.updated>ex.updated){Object.assign(ex,l);updated++}});
+    persist();toast(`Restored: ${added} new, ${updated} updated`);renderLists();
+  }catch(_){toast('Not a valid backup file')}
+  e.target.value='';
+};
+
+/* ---------- init ---------- */
+window.addEventListener('beforeunload',()=>persist());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persist();else{lists=load(K_LISTS,lists);if(current){current=lists.find(l=>l.id===current.id)||null;current?renderScan():showHome()}else renderLists()}});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
+showHome();updateBadge();syncAll();
+</script>
+</body>
+</html>
