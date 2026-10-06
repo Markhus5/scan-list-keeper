@@ -53,6 +53,13 @@ Open `manager.html` on your PC → **Connection** → paste the `/exec` URL + `M
 - **Download CSV** keeps long numeric serials and leading zeros intact.
 - You can also just open the Google Sheet directly, or *File → Download → .xlsx*.
 
+## Users
+
+The **User** dropdown lists: Mark (test), Hen, Bao, Rocky, Dennis, Geraldine, Phung, Kim, Guest.
+- **Guest** shows a name box → saved as `Guest – <name>` (or just `Guest`).
+- **Mark (test)** lists get an orange **TEST** tag; tick **Hide test lists** in Manager View to keep them out of exports.
+- To change the names, edit the `USERS` line near the top of the script in `index.html`, then bump `VERSION` in `sw.js`.
+
 ## Scanning behaviour
 
 - Scanner must send **Enter** (or Tab) after each code — the default for most scanners.

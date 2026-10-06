@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f3d5e">
+<meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Scan List Keeper</title>
@@ -13,21 +13,22 @@
 <style>
 :root{
   --bg:#eef2f6; --card:#ffffff; --ink:#14212b; --muted:#5d6b78; --line:#d5dde5;
-  --brand:#0f3d5e; --brand2:#1b6aa5; --ok:#1e8e3e; --okbg:#e3f4e8; --warn:#b26a00; --warnbg:#fff3dc;
+  --brand:#002060; --brand2:#002060; --navy:#002060; --ok:#1e8e3e; --okbg:#e3f4e8; --warn:#b26a00; --warnbg:#fff3dc;
   --bad:#c62828; --badbg:#fde7e7; --chip:#e8eef4;
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#0e1419; --card:#18212a; --ink:#e6edf3; --muted:#93a3b2; --line:#2a3642;
-    --brand:#7cc0f0; --brand2:#5aa8e0; --okbg:#173622; --warnbg:#3a2c10; --badbg:#3d1717; --chip:#22303c; }
+    --brand:#8fb3ff; --brand2:#2f5bb7; --okbg:#173622; --warnbg:#3a2c10; --badbg:#3d1717; --chip:#22303c; }
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 button,input,textarea,select{font:inherit;color:inherit}
-header.top{position:sticky;top:0;z-index:5;background:#0f3d5e;color:#fff;display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top))}
-header.top h1{font-size:19px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.iconbtn{background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:10px;min-width:44px;height:44px;padding:0 12px;font-size:16px;cursor:pointer}
-.iconbtn:active{background:rgba(255,255,255,.25)}
-.sync{font-size:13px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.15);white-space:nowrap;cursor:pointer;border:0;color:#fff}
+header.top{position:sticky;top:0;z-index:5;background:#fff;color:#002060;border-bottom:4px solid #002060;box-shadow:0 2px 6px rgba(0,0,0,.08);display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top))}
+header.top .logo{height:38px;width:auto;display:block}
+header.top h1{font-size:19px;color:#002060;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{background:#e8edf6;border:0;color:#002060;border-radius:10px;min-width:44px;height:44px;padding:0 12px;font-size:16px;cursor:pointer}
+.iconbtn:active{background:#cfd9ec}
+.sync{font-size:13px;padding:5px 10px;border-radius:999px;background:#6b7785;white-space:nowrap;cursor:pointer;border:0;color:#fff}
 .sync.ok{background:#1e8e3e}.sync.pend{background:#b26a00}.sync.off{background:#6b7785}.sync.err{background:#c62828}
 main{max-width:1000px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
@@ -86,6 +87,7 @@ tr.new td{background:var(--okbg)}
 .toast.show{opacity:1}
 .hint{font-size:13px;color:var(--muted)}
 .hidden{display:none!important}
+.chip.test{background:#b26a00;color:#fff}
 .check{display:flex;align-items:center;gap:10px;margin-top:12px;color:var(--ink);font-size:15px}
 .check input{width:22px;height:22px}
 </style>
@@ -93,6 +95,7 @@ tr.new td{background:var(--okbg)}
 <body>
 <header class="top">
   <button class="iconbtn hidden" id="backBtn" title="Back to lists">&#8592;</button>
+  <img src="icons/mtdata-logo-navy.png" alt="MTData" class="logo">
   <h1 id="topTitle">Scan List Keeper</h1>
   <button class="sync off" id="syncBadge" title="Sync status">Not set up</button>
   <button class="iconbtn" id="settingsBtn" title="Settings">&#9881;</button>
@@ -105,7 +108,8 @@ tr.new td{background:var(--okbg)}
     <h2>Start a new list</h2>
     <div class="row">
       <div><label for="newTitle">Title *</label><input type="text" id="newTitle" placeholder="e.g. WO-12345 Camera boards" autocomplete="off"></div>
-      <div><label for="newUser">User *</label><input type="text" id="newUser" placeholder="Your name" autocomplete="off"></div>
+      <div><label for="newUser">User *</label><select id="newUser" class="userSel"></select>
+        <input type="text" id="newGuest" class="hidden" placeholder="Guest name (optional)" autocomplete="off" style="margin-top:8px"></div>
     </div>
     <label for="newNotes">Notes (optional)</label>
     <input type="text" id="newNotes" placeholder="e.g. Line 2, batch, customer, part no." autocomplete="off">
@@ -194,7 +198,8 @@ tr.new td{background:var(--okbg)}
   <div class="box">
     <h3>Edit list heading</h3>
     <label for="eTitle">Title</label><input type="text" id="eTitle">
-    <label for="eUser">User</label><input type="text" id="eUser">
+    <label for="eUser">User</label><select id="eUser" class="userSel"></select>
+    <input type="text" id="eGuest" class="hidden" placeholder="Guest name (optional)" style="margin-top:8px">
     <label for="eNotes">Notes</label><input type="text" id="eNotes">
     <div class="btns">
       <button class="btn primary" id="eSave">Save</button>
@@ -222,6 +227,18 @@ const $=id=>document.getElementById(id);
 function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Could not save — storage full?');return false}}
 
+const USERS=['Mark (test)','Hen','Bao','Rocky','Dennis','Geraldine','Phung','Kim','Guest'];
+function fillUserSel(sel){sel.innerHTML='<option value="">— Select user —</option>'+USERS.map(u=>`<option>${u}</option>`).join('')}
+// value stored on list: name, or "Guest – <name>"
+function setUser(selId,guestId,val){
+  const sel=$(selId),g=$(guestId);val=val||'';
+  if(USERS.includes(val)&&val!=='Guest'){sel.value=val;g.value='';}
+  else if(val){sel.value='Guest';g.value=val.replace(/^Guest(\s*[–-]\s*)?/,'');}
+  else{sel.value='';g.value='';}
+  g.classList.toggle('hidden',sel.value!=='Guest');
+}
+function getUser(selId,guestId){const v=$(selId).value;if(v!=='Guest')return v;const n=$(guestId).value.trim();return n?'Guest – '+n:'Guest'}
+function isTest(u){return /\(test\)/i.test(u||'')}
 let lists=load(K_LISTS,[]);
 let settings=Object.assign({device:'',apiUrl:'',apiKey:'',dupBlock:true,upper:false,sound:true},load(K_SET,{}));
 let current=null, filter='open', lastAddedIdx=-1;
@@ -276,7 +293,7 @@ function showHome(){
   current=null;
   $('home').classList.remove('hidden');$('scan').classList.add('hidden');$('backBtn').classList.add('hidden');
   $('topTitle').textContent='Scan List Keeper';
-  $('newUser').value=$('newUser').value||load(K_LASTUSER,'');
+  if(!$('newUser').value)setUser('newUser','newGuest',load(K_LASTUSER,''));
   renderLists();
 }
 function renderLists(){
@@ -287,7 +304,7 @@ function renderLists(){
   $('lists').innerHTML=out.length?out.map(l=>`
     <div class="li" data-id="${l.id}">
       <div class="main">
-        <div class="t">${esc(l.title)}${l.status==='closed'?'<span class="chip closed">Finished</span>':''}${l.dirty&&settings.apiUrl?'<span class="chip pend">Not synced</span>':''}</div>
+        <div class="t">${esc(l.title)}${isTest(l.user)?'<span class="chip test">TEST</span>':''}${l.status==='closed'?'<span class="chip closed">Finished</span>':''}${l.dirty&&settings.apiUrl?'<span class="chip pend">Not synced</span>':''}</div>
         <div class="s">${esc(l.user)}${l.notes?' · '+esc(l.notes):''} · updated ${fmtShort(l.updated)}</div>
       </div>
       <div class="count">${l.items.length}</div>
@@ -297,16 +314,16 @@ $('lists').addEventListener('click',e=>{const el=e.target.closest('.li');if(el)o
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));filter=t.dataset.f;renderLists()});
 $('listSearch').oninput=renderLists;
 $('startBtn').onclick=()=>{
-  const title=$('newTitle').value.trim(), user=$('newUser').value.trim(), notes=$('newNotes').value.trim();
+  const title=$('newTitle').value.trim(), user=getUser('newUser','newGuest'), notes=$('newNotes').value.trim();
   if(!title){toast('Enter a title');$('newTitle').focus();return}
-  if(!user){toast('Enter the user name');$('newUser').focus();return}
+  if(!user){toast('Select the user');$('newUser').focus();return}
   const t=nowISO();
   const l={id:uid(),title,user,notes,device:settings.device||'',created:t,updated:t,status:'open',items:[],dirty:true};
   lists.push(l);persist();save(K_LASTUSER,user);
   $('newTitle').value='';$('newNotes').value='';
   queueSync(l.id);openList(l.id);
 };
-['newTitle','newUser','newNotes'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('startBtn').click()}));
+['newTitle','newGuest','newNotes'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')$('startBtn').click()}));
 
 /* ---------- scan screen ---------- */
 function openList(id){
@@ -401,10 +418,10 @@ $('finishBtn').onclick=async()=>{
 };
 
 /* ---------- edit heading ---------- */
-$('editBtn').onclick=()=>{$('eTitle').value=current.title;$('eUser').value=current.user;$('eNotes').value=current.notes||'';openModal('editModal')};
+$('editBtn').onclick=()=>{$('eTitle').value=current.title;setUser('eUser','eGuest',current.user);$('eNotes').value=current.notes||'';openModal('editModal')};
 $('eCancel').onclick=()=>closeModal('editModal');
 $('eSave').onclick=()=>{
-  const t=$('eTitle').value.trim(),u=$('eUser').value.trim();if(!t||!u)return toast('Title and user are required');
+  const t=$('eTitle').value.trim(),u=getUser('eUser','eGuest');if(!t||!u)return toast('Title and user are required');
   current.title=t;current.user=u;current.notes=$('eNotes').value.trim();touch();closeModal('editModal');$('topTitle').textContent=t;renderScan();
 };
 $('eDelete').onclick=async()=>{
@@ -479,6 +496,8 @@ $('restoreFile').onchange=async e=>{
 window.addEventListener('beforeunload',()=>persist());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persist();else{lists=load(K_LISTS,lists);if(current){current=lists.find(l=>l.id===current.id)||null;current?renderScan():showHome()}else renderLists()}});
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
+document.querySelectorAll('.userSel').forEach(fillUserSel);
+[['newUser','newGuest'],['eUser','eGuest']].forEach(([s,g])=>$(s).addEventListener('change',()=>{$(g).classList.toggle('hidden',$(s).value!=='Guest');if($(s).value==='Guest')$(g).focus()}));
 showHome();updateBadge();syncAll();
 </script>
 </body>
